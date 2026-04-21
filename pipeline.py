@@ -84,55 +84,35 @@ def _normalize_env_string(value: str) -> str:
 
 
 OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
-GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-
-def _first_api_key_from_env() -> tuple[str, str]:
-    """Returns (api_key, env_var_name_used) from the first non-empty candidate."""
-    for name in ("LLM_API_KEY", "GROQ_API_KEY"):
-        v = _normalize_env_string(os.getenv(name, ""))
-        if v:
-            return v, name
-    return "", ""
 
 
 def resolve_llm_runtime_config() -> tuple[str, str, str]:
     """
-    Resolve (api_key, model, chat_completions_url) for OpenAI-compatible POSTs.
+    Resolve (api_key, model, chat_completions_url) for OpenAI chat completions.
 
-    Keys: ``LLM_API_KEY`` or ``GROQ_API_KEY`` (Groq keys usually start with ``gsk_``).
-
-    URL: ``LLM_API_URL`` if set; else Groq if ``LLM_PROVIDER=groq``, ``GROQ_API_KEY`` was used,
-    or the key starts with ``gsk_``; otherwise OpenAI.
+    Reads ``LLM_API_KEY``, or ``OPENAI_API_KEY`` if the former is unset (for scripts without ``app.py``).
     """
-    api_key, key_source = _first_api_key_from_env()
+    api_key = _normalize_env_string(os.getenv("LLM_API_KEY", ""))
+    if not api_key:
+        api_key = _normalize_env_string(os.getenv("OPENAI_API_KEY", ""))
     model = _normalize_env_string(os.getenv("LLM_MODEL", ""))
-    api_url_override = _normalize_env_string(os.getenv("LLM_API_URL", ""))
-    if api_url_override:
-        api_url = api_url_override
-    else:
-        provider = _normalize_env_string(os.getenv("LLM_PROVIDER", "")).lower()
-        if provider == "groq" or key_source == "GROQ_API_KEY" or api_key.startswith("gsk_"):
-            api_url = GROQ_CHAT_COMPLETIONS_URL
-        else:
-            api_url = OPENAI_CHAT_COMPLETIONS_URL
+    api_url = _normalize_env_string(os.getenv("LLM_API_URL", "")) or OPENAI_CHAT_COMPLETIONS_URL
     return api_key, model, api_url
 
 
 def call_llm_api(prompt: str, log_path: Path) -> str:
     """
-    Calls a chat-completions-compatible endpoint (OpenAI or Groq).
+    Calls OpenAI's chat-completions endpoint (or another host if ``LLM_API_URL`` is set).
     Required env vars:
-      - LLM_API_KEY or GROQ_API_KEY
+      - LLM_API_KEY (or OPENAI_API_KEY if LLM_API_KEY is unset)
       - LLM_MODEL
     Optional env vars:
-      - LLM_API_URL (overrides default host)
-      - LLM_PROVIDER=groq (use Groq default URL if ``LLM_API_URL`` is unset)
+      - LLM_API_URL (default: OpenAI chat completions URL)
     """
     api_key, model, api_url = resolve_llm_runtime_config()
 
     if not api_key:
-        raise ValueError("Missing LLM_API_KEY or GROQ_API_KEY environment variable.")
+        raise ValueError("Missing LLM_API_KEY (or OPENAI_API_KEY) environment variable.")
     if not model:
         raise ValueError("Missing LLM_MODEL environment variable.")
 

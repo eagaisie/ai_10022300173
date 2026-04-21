@@ -23,12 +23,12 @@ ADVERSARIAL_QUERIES = [
 def call_pure_llm(question: str) -> str:
     """
     Baseline LLM call without retrieval context.
-    Uses same env vars as pipeline (OpenAI or Groq via resolve_llm_runtime_config).
+    Uses same env vars as pipeline (``resolve_llm_runtime_config``).
     """
     api_key, model, api_url = resolve_llm_runtime_config()
 
     if not api_key:
-        raise ValueError("Missing LLM_API_KEY or GROQ_API_KEY environment variable.")
+        raise ValueError("Missing LLM_API_KEY (or OPENAI_API_KEY) environment variable.")
     if not model:
         raise ValueError("Missing LLM_MODEL environment variable.")
 
