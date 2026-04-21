@@ -26,7 +26,24 @@ def _apply_streamlit_secrets_to_environ() -> None:
         pass
 
 
+def _synthesize_llm_env_from_aliases() -> None:
+    """pipeline.py expects LLM_API_KEY / LLM_MODEL; accept common alternate secret names."""
+    if not os.getenv("LLM_API_KEY", "").strip():
+        for alt in ("OPENAI_API_KEY", "OPENAI_KEY", "AZURE_OPENAI_API_KEY"):
+            v = os.getenv(alt, "").strip()
+            if v:
+                os.environ["LLM_API_KEY"] = v
+                break
+    if not os.getenv("LLM_MODEL", "").strip():
+        for alt in ("OPENAI_MODEL", "LLM_MODEL_NAME"):
+            v = os.getenv(alt, "").strip()
+            if v:
+                os.environ["LLM_MODEL"] = v
+                break
+
+
 _apply_streamlit_secrets_to_environ()
+_synthesize_llm_env_from_aliases()
 
 
 def _ensure_chunks_for_cloud() -> None:

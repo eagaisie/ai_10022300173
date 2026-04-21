@@ -151,7 +151,7 @@ On first run, `app.py` can also build `data/all_chunks.json` automatically if it
 
 ## 9. Deploy to Streamlit Community Cloud
 
-I cannot log into your Streamlit account for you, but the repo is set up so **you** can deploy in a few clicks:
+
 
 1. **Push this repo to GitHub** (already typical for your project).
 2. Go to [https://share.streamlit.io/](https://share.streamlit.io/) and sign in with GitHub.
@@ -167,7 +167,9 @@ LLM_MODEL = "gpt-4o-mini"
 # HF_TOKEN = "hf_..."   # higher Hugging Face rate limits for embedding model download
 ```
 
-`app.py` copies these into `os.environ` on startup so `pipeline.py` sees them.
+`app.py` copies these into `os.environ` on startup so `pipeline.py` sees them. If you already use **`OPENAI_API_KEY`** in Secrets, that is also accepted and mapped to `LLM_API_KEY` (you still need **`LLM_MODEL`** unless you add e.g. `OPENAI_MODEL`).
+
+If you see **Missing LLM_API_KEY**, the deployed app has no matching secret: open **this app’s** **Manage app → Settings → Secrets** (not only account-level settings), save, then **Reboot app**.
 
 6. **First deploy / cold start:** the app builds **`data/all_chunks.json`** from the **tracked** CSV and PDF under `data/` (this can take **1–2 minutes** and may download **sentence-transformers** weights into `.hf_cache` on the instance). Later loads are faster.
 
