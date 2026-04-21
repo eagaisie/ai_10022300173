@@ -83,12 +83,46 @@ if user_query:
 
     with st.chat_message("assistant"):
         with st.spinner("Running retrieval + generation pipeline..."):
-            result = run_numpy_expanded_rag_query(
-                user_query,
-                top_k=3,
-                memory_buffer=st.session_state.memory_buffer,
-            )
-        st.markdown(result["final_response"])
+            try:
+                result = run_numpy_expanded_rag_query(
+                    user_query,
+                    top_k=3,
+                    memory_buffer=st.session_state.memory_buffer,
+                )
+            except Exception as e:
+                hint = (
+                    "**Something broke before the answer was ready.**\n\n"
+                    "Typical fixes:\n"
+                    "- **Streamlit Cloud:** **Manage app** → **Settings** → **Secrets** — set `LLM_API_KEY` "
+                    "and `LLM_MODEL`, save, then **Reboot app**.\n"
+                    "- **Local:** run `export LLM_API_KEY=...` and `export LLM_MODEL=...` in the same shell "
+                    "as `streamlit run app.py`.\n"
+                    "- If the error mentions **chunks** or **all_chunks.json**, wait for the first-load "
+                    "spinner to finish, or run `python 1_data_prep.py` locally.\n"
+                    "- If it mentions **Hugging Face** / download, add `HF_TOKEN` in Secrets (Cloud) or "
+                    "`export HF_TOKEN=...` locally.\n\n"
+                    f"**Technical detail:** `{type(e).__name__}: {e}`"
+                )
+                st.markdown(hint)
+                result = {
+                    "original_query": user_query,
+                    "expanded_query": user_query,
+                    "final_response": hint,
+                    "numpy_similarity_scores": [],
+                    "retrieved_documents": [],
+                    "exact_prompt_sent_to_llm": "",
+                    "log_file": "",
+                    "api_call_success": False,
+                }
+            else:
+                st.markdown(result["final_response"])
+                if not result.get("api_call_success", True):
+                    st.warning(
+                        "The **LLM** step failed (see the assistant text above). On Streamlit Cloud, "
+                        "open **Manage app** → **Settings** → **Secrets**, set `LLM_API_KEY` and "
+                        "`LLM_MODEL` exactly (no quotes in the TOML value unless they are part of the key), "
+                        "save, then **Reboot app**."
+                    )
 
     st.session_state.chat_history.append(
         {"role": "assistant", "content": result["final_response"]}
