@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import streamlit as st
 
@@ -12,17 +13,37 @@ from pipeline import run_numpy_expanded_rag_query
 st.set_page_config(page_title="Custom RAG Demo", layout="wide")
 
 
+def _coerce_secret_scalar(val: Any) -> str | None:
+    """Streamlit / TOML values may not always pass isinstance(..., str); normalize to str."""
+    if val is None or isinstance(val, (dict, list, tuple, set)):
+        return None
+    s = str(val).strip()
+    return s or None
+
+
+def _flatten_streamlit_secrets(node: Any, out: dict[str, str]) -> None:
+    """Recursively collect string secrets from nested TOML tables (any depth)."""
+    if not isinstance(node, dict):
+        return
+    for key, val in node.items():
+        if not isinstance(key, str) or not key:
+            continue
+        if isinstance(val, dict):
+            _flatten_streamlit_secrets(val, out)
+        else:
+            s = _coerce_secret_scalar(val)
+            if s is not None:
+                out[key] = s
+
+
 def _apply_streamlit_secrets_to_environ() -> None:
     """Map Streamlit Cloud (TOML) secrets into os.environ for pipeline.py / HF."""
     try:
-        for key, val in dict(st.secrets).items():
-            if isinstance(val, str) and val.strip():
-                os.environ.setdefault(key, val)
-            elif isinstance(val, dict):
-                for k2, v2 in val.items():
-                    if isinstance(v2, str) and v2.strip():
-                        os.environ.setdefault(k2, v2)
-    except (FileNotFoundError, RuntimeError, TypeError):
+        flat: dict[str, str] = {}
+        _flatten_streamlit_secrets(dict(st.secrets), flat)
+        for key, val in flat.items():
+            os.environ[key] = val
+    except Exception:
         pass
 
 
@@ -42,8 +63,13 @@ def _synthesize_llm_env_from_aliases() -> None:
                 break
 
 
-_apply_streamlit_secrets_to_environ()
-_synthesize_llm_env_from_aliases()
+def _refresh_llm_env_from_streamlit() -> None:
+    """Re-read secrets into os.environ (safe to call every rerun / before each chat)."""
+    _apply_streamlit_secrets_to_environ()
+    _synthesize_llm_env_from_aliases()
+
+
+_refresh_llm_env_from_streamlit()
 
 
 def _ensure_chunks_for_cloud() -> None:
@@ -67,6 +93,19 @@ def _bootstrap_index() -> bool:
 
 
 _bootstrap_index()
+
+with st.sidebar:
+    st.subheader("LLM configuration")
+    _refresh_llm_env_from_streamlit()
+    if os.getenv("LLM_API_KEY", "").strip():
+        st.success("LLM_API_KEY is loaded (value hidden).")
+    else:
+        st.error(
+            "**No API key in the environment.** Add it in Streamlit **Manage app → Settings → Secrets** "
+            "as `LLM_API_KEY`, or `OPENAI_API_KEY`. Save, then **Reboot app**."
+        )
+    _model = os.getenv("LLM_MODEL", "").strip() or "(not set — add LLM_MODEL in Secrets)"
+    st.caption(f"LLM_MODEL: `{_model}`")
 
 st.title("Custom Retrieval + Prompting Pipeline")
 st.caption(
@@ -101,6 +140,7 @@ if user_query:
     with st.chat_message("assistant"):
         with st.spinner("Running retrieval + generation pipeline..."):
             try:
+                _refresh_llm_env_from_streamlit()
                 result = run_numpy_expanded_rag_query(
                     user_query,
                     top_k=3,
