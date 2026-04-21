@@ -1,5 +1,7 @@
+numpy
 pandas
 PyPDF2
 sentence-transformers
-faiss-cpu 
+faiss-cpu
 streamlit
+openai
