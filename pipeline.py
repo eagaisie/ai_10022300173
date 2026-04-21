@@ -75,6 +75,14 @@ def build_grounded_prompt(
     return prompt
 
 
+def _normalize_env_string(value: str) -> str:
+    """Strip whitespace and a single pair of surrounding quotes (common copy/paste mistakes)."""
+    s = value.strip()
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        s = s[1:-1].strip()
+    return s
+
+
 def call_llm_api(prompt: str, log_path: Path) -> str:
     """
     Calls a chat-completions-compatible endpoint.
@@ -84,9 +92,11 @@ def call_llm_api(prompt: str, log_path: Path) -> str:
     Optional env vars:
       - LLM_API_URL (default: OpenAI chat completions endpoint)
     """
-    api_key = os.getenv("LLM_API_KEY", "").strip()
-    model = os.getenv("LLM_MODEL", "").strip()
-    api_url = os.getenv("LLM_API_URL", "https://api.openai.com/v1/chat/completions").strip()
+    api_key = _normalize_env_string(os.getenv("LLM_API_KEY", ""))
+    model = _normalize_env_string(os.getenv("LLM_MODEL", ""))
+    api_url = _normalize_env_string(
+        os.getenv("LLM_API_URL", "https://api.openai.com/v1/chat/completions")
+    )
 
     if not api_key:
         raise ValueError("Missing LLM_API_KEY environment variable.")
