@@ -23,7 +23,7 @@ ADVERSARIAL_QUERIES = [
 def call_pure_llm(question: str) -> str:
     """
     Baseline LLM call without retrieval context.
-    Uses same env vars as pipeline (including Groq via GROQ_API_KEY / resolve_llm_runtime_config).
+    Uses same env vars as pipeline (OpenAI or Groq via resolve_llm_runtime_config).
     """
     api_key, model, api_url = resolve_llm_runtime_config()
 
