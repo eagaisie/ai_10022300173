@@ -7,20 +7,29 @@ Chunk size: 500 words, overlap: 50 words. No LangChain / LlamaIndex / RAG libs.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
 import PyPDF2
 
-# Paths relative to this script’s directory
+# Paths relative to this script's directory
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
-DEFAULT_CSV = DATA_DIR / "Ghana_Election_Result.csv"
-# Set to your PDF filename under data/ when present
-DEFAULT_PDF = DATA_DIR / "2025-Budget-Statement-and-Economic-Policy_v4 (1).pdf"
+CSV_CANDIDATES = [
+    DATA_DIR / "Ghana Election_Result.csv",
+    DATA_DIR / "Ghana_Election_Result.csv",
+]
+PDF_CANDIDATES = [
+    DATA_DIR / "2025-Budget-Statement-and-Economic-Policy_v4.pdf",
+    DATA_DIR / "2025-Budget-Statement-and-Economic-Policy_v4 (1).pdf",
+]
 
 CHUNK_SIZE = 500
 OVERLAP = 50
+CSV_CHUNKS_PATH = DATA_DIR / "csv_chunks.json"
+PDF_CHUNKS_PATH = DATA_DIR / "pdf_chunks.json"
+ALL_CHUNKS_PATH = DATA_DIR / "all_chunks.json"
 
 
 def read_csv_as_text(csv_path: Path) -> str:
@@ -78,21 +87,32 @@ def chunk_source(label: str, text: str) -> list[str]:
     return chunks
 
 
-def main() -> None:
-    csv_path = DEFAULT_CSV
-    pdf_path = DEFAULT_PDF
+def resolve_existing_path(candidates: list[Path], label: str) -> Path:
+    """Return first existing path from candidates."""
+    for path in candidates:
+        if path.is_file():
+            return path
+    choices = "\n".join(str(p) for p in candidates)
+    raise FileNotFoundError(f"{label} file not found. Tried:\n{choices}")
 
-    if not csv_path.is_file():
-        raise FileNotFoundError(f"CSV not found: {csv_path}")
+
+def main() -> None:
+    csv_path = resolve_existing_path(CSV_CANDIDATES, "CSV")
+    pdf_path = resolve_existing_path(PDF_CANDIDATES, "PDF")
+
     csv_text = read_csv_as_text(csv_path)
     csv_chunks = chunk_source("CSV", csv_text)
 
-    pdf_chunks: list[str] = []
-    if pdf_path.is_file():
-        pdf_text = read_pdf_as_text(pdf_path)
-        pdf_chunks = chunk_source("PDF", pdf_text)
-    else:
-        print(f"PDF skipped (file not found): {pdf_path}")
+    pdf_text = read_pdf_as_text(pdf_path)
+    pdf_chunks = chunk_source("PDF", pdf_text)
+
+    CSV_CHUNKS_PATH.write_text(json.dumps(csv_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
+    PDF_CHUNKS_PATH.write_text(json.dumps(pdf_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
+    combined_chunks = csv_chunks + pdf_chunks
+    ALL_CHUNKS_PATH.write_text(json.dumps(combined_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\nSaved CSV chunks to: {CSV_CHUNKS_PATH}")
+    print(f"Saved PDF chunks to: {PDF_CHUNKS_PATH}")
+    print(f"Saved combined chunks to: {ALL_CHUNKS_PATH} ({len(combined_chunks)} chunks)")
 
     # Example: first chunk preview only (avoid dumping huge output)
     if csv_chunks:

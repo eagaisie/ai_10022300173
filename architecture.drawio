@@ -1,0 +1,47 @@
+<mxfile host="app.diagrams.net" modified="2026-04-20T19:30:00.000Z" agent="Cursor" version="24.7.17">
+  <diagram id="rag-architecture" name="RAG Architecture">
+    <mxGraphModel dx="1280" dy="720" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="u1" value="User (Streamlit Chat)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1" value="app.py&#xa;chat UI + memory buffer (last 3 turns)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="260" y="120" width="240" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="p1" value="pipeline.py&#xa;run_rag_query()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="540" y="120" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="r1" value="retrieval.py&#xa;embed query/chunks + FAISS top-k" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="760" y="60" width="230" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="d1" value="data/all_chunks.json&#xa;(CSV+PDF manual chunks)" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="60" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="l1" value="Prompt Builder&#xa;strict context-only instruction&#xa;+ memory + retrieved chunks" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="760" y="190" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="m1" value="LLM API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="200" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="o1" value="Answer + Retrieved Chunks + Scores + Prompt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="760" y="330" width="460" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="g1" value="logs/*.txt + logs/*.json&#xa;(experiment artifacts)" style="shape=folder;whiteSpace=wrap;html=1;tabWidth=40;tabHeight=14;tabPosition=left;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="540" y="330" width="190" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="u1" target="a1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e2" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="a1" target="p1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e3" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="p1" target="r1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e4" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="r1" target="d1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e5" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="p1" target="l1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e6" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="l1" target="m1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e7" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="m1" target="o1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e8" style="endArrow=block;html=1;rounded=0;" edge="1" parent="1" source="p1" target="g1"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="e9" value="display in chat + sidebar" style="endArrow=block;html=1;rounded=0;dashed=1;" edge="1" parent="1" source="o1" target="a1"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

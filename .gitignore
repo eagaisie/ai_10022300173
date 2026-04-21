@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Hugging Face / transformers cache (large model weights — never commit)
+.hf_cache/
+
+# Local experiment logs and generated reports
+logs/
+
+# Generated chunk exports (rebuild with 1_data_prep.py)
+data/all_chunks.json
+data/csv_chunks.json
+data/pdf_chunks.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
