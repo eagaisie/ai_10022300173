@@ -1,4 +1,5 @@
-# Emmanuel Ato Gaisie — 10022300173
+# Emmanuel Ato Gaisie 
+# 10022300173
 
 # RAG system documentation: ambiguous queries, Streamlit parity, and RAG vs pure LLM
 
@@ -138,8 +139,38 @@ So for **this** execution, the **comparison of final natural-language answers** 
 python3 -m venv env
 source env/bin/activate   # Windows: env\Scripts\activate
 pip install -r requirements.txt
-python 1_data_prep.py      # builds data/all_chunks.json (gitignored JSON outputs)
+python 1_data_prep.py      # optional locally: builds data/all_chunks.json (gitignored)
 export LLM_API_KEY="..."
 export LLM_MODEL="gpt-4o-mini"
 streamlit run app.py
 ```
+
+On first run, `app.py` can also build `data/all_chunks.json` automatically if it is missing (needed for **Streamlit Community Cloud**, where that file is not in Git).
+
+---
+
+## 9. Deploy to Streamlit Community Cloud
+
+I cannot log into your Streamlit account for you, but the repo is set up so **you** can deploy in a few clicks:
+
+1. **Push this repo to GitHub** (already typical for your project).
+2. Go to [https://share.streamlit.io/](https://share.streamlit.io/) and sign in with GitHub.
+3. **New app** → pick the repository and branch → set **Main file path** to: `app.py`.
+4. **Python dependencies:** Community Cloud installs from **`requirements.txt`** at the repo root (already present).
+5. **Secrets (required for answers, not for retrieval alone):** in the app → **Settings → Secrets**, add a TOML block, for example:
+
+```toml
+LLM_API_KEY = "sk-...your-key..."
+LLM_MODEL = "gpt-4o-mini"
+# optional:
+# LLM_API_URL = "https://api.openai.com/v1/chat/completions"
+# HF_TOKEN = "hf_..."   # higher Hugging Face rate limits for embedding model download
+```
+
+`app.py` copies these into `os.environ` on startup so `pipeline.py` sees them.
+
+6. **First deploy / cold start:** the app builds **`data/all_chunks.json`** from the **tracked** CSV and PDF under `data/` (this can take **1–2 minutes** and may download **sentence-transformers** weights into `.hf_cache` on the instance). Later loads are faster.
+
+7. **Open the app URL** Streamlit gives you and test the chat.
+
+**Note:** Generated chunk JSON and logs remain **gitignored**; the Cloud instance creates chunks on disk at runtime. If the app fails, check **Streamlit logs** for missing `data/*.csv` / PDF paths or Hugging Face download errors.

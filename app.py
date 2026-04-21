@@ -1,13 +1,56 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
+from pathlib import Path
 
 import streamlit as st
 
 from pipeline import run_numpy_expanded_rag_query
 
-
 st.set_page_config(page_title="Custom RAG Demo", layout="wide")
+
+
+def _apply_streamlit_secrets_to_environ() -> None:
+    """Map Streamlit Cloud (TOML) secrets into os.environ for pipeline.py / HF."""
+    try:
+        for key, val in dict(st.secrets).items():
+            if isinstance(val, str) and val.strip():
+                os.environ.setdefault(key, val)
+            elif isinstance(val, dict):
+                for k2, v2 in val.items():
+                    if isinstance(v2, str) and v2.strip():
+                        os.environ.setdefault(k2, v2)
+    except (FileNotFoundError, RuntimeError, TypeError):
+        pass
+
+
+_apply_streamlit_secrets_to_environ()
+
+
+def _ensure_chunks_for_cloud() -> None:
+    """
+    On Streamlit Community Cloud, data/all_chunks.json is usually absent (gitignored).
+    Build it once per process from the tracked CSV/PDF under data/.
+    """
+    root = Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location("data_prep_bootstrap", root / "1_data_prep.py")
+    if spec is None or spec.loader is None:
+        raise RuntimeError("Could not load 1_data_prep.py for chunk bootstrap.")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.ensure_all_chunks_json(verbose=False)
+
+
+@st.cache_resource(show_spinner="Preparing search index (first load may take 1–2 minutes)…")
+def _bootstrap_index() -> bool:
+    _ensure_chunks_for_cloud()
+    return True
+
+
+_bootstrap_index()
+
 st.title("Custom Retrieval + Prompting Pipeline")
 st.caption(
     "NumPy cosine retrieval on expanded queries, strict context-grounded prompting, optional memory."

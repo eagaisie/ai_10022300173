@@ -96,25 +96,45 @@ def resolve_existing_path(candidates: list[Path], label: str) -> Path:
     raise FileNotFoundError(f"{label} file not found. Tried:\n{choices}")
 
 
-def main() -> None:
+def build_and_save_all_chunks(*, verbose: bool = True) -> int:
+    """
+    Read CSV/PDF, chunk, write csv_chunks.json, pdf_chunks.json, all_chunks.json.
+    Returns total number of combined chunks.
+    """
     csv_path = resolve_existing_path(CSV_CANDIDATES, "CSV")
     pdf_path = resolve_existing_path(PDF_CANDIDATES, "PDF")
 
     csv_text = read_csv_as_text(csv_path)
-    csv_chunks = chunk_source("CSV", csv_text)
+    csv_chunks = chunk_source("CSV", csv_text) if verbose else sliding_window_word_chunks(csv_text)
 
     pdf_text = read_pdf_as_text(pdf_path)
-    pdf_chunks = chunk_source("PDF", pdf_text)
+    pdf_chunks = chunk_source("PDF", pdf_text) if verbose else sliding_window_word_chunks(pdf_text)
 
     CSV_CHUNKS_PATH.write_text(json.dumps(csv_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
     PDF_CHUNKS_PATH.write_text(json.dumps(pdf_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
     combined_chunks = csv_chunks + pdf_chunks
     ALL_CHUNKS_PATH.write_text(json.dumps(combined_chunks, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"\nSaved CSV chunks to: {CSV_CHUNKS_PATH}")
-    print(f"Saved PDF chunks to: {PDF_CHUNKS_PATH}")
-    print(f"Saved combined chunks to: {ALL_CHUNKS_PATH} ({len(combined_chunks)} chunks)")
+    if verbose:
+        print(f"\nSaved CSV chunks to: {CSV_CHUNKS_PATH}")
+        print(f"Saved PDF chunks to: {PDF_CHUNKS_PATH}")
+        print(f"Saved combined chunks to: {ALL_CHUNKS_PATH} ({len(combined_chunks)} chunks)")
+    return len(combined_chunks)
 
-    # Example: first chunk preview only (avoid dumping huge output)
+
+def ensure_all_chunks_json(*, verbose: bool = False) -> Path:
+    """
+    Build data/all_chunks.json (and split JSONs) if missing.
+    Used by Streamlit Community Cloud where generated JSON is not in Git.
+    """
+    if ALL_CHUNKS_PATH.is_file():
+        return ALL_CHUNKS_PATH
+    build_and_save_all_chunks(verbose=verbose)
+    return ALL_CHUNKS_PATH
+
+
+def main() -> None:
+    build_and_save_all_chunks(verbose=True)
+    csv_chunks = json.loads(CSV_CHUNKS_PATH.read_text(encoding="utf-8"))
     if csv_chunks:
         preview = csv_chunks[0][:400] + ("…" if len(csv_chunks[0]) > 400 else "")
         print("\nFirst CSV chunk preview:\n", preview, sep="")
