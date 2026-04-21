@@ -169,9 +169,12 @@ LLM_MODEL = "llama-3.3-70b-versatile"
 # optional:
 # LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # HF_TOKEN = "hf_..."   # higher Hugging Face rate limits for embedding model download
+# LLM_HTTP_USER_AGENT = "Mozilla/5.0 ..."   # optional; helps if Groq returns HTTP 403 error 1010 (Cloudflare)
 ```
 
 `app.py` copies these into `os.environ` on startup so `pipeline.py` sees them. You may use **`LLM_API_KEY`** instead of **`GROQ_API_KEY`** if you prefer that name (same `gsk_` value).
+
+**Groq HTTP 403 / error 1010:** Often a **Cloudflare** block on the HTTP client (not your Groq key). `pipeline.py` sends **`Accept`** and a normal **`User-Agent`**; redeploy after updating. You can set **`LLM_HTTP_USER_AGENT`** in Secrets to a current desktop browser string if needed. If it **only** fails on Streamlit Cloud but works on your laptop with the same key, egress IP / region may be involved—check **Manage app → Logs** and Groq status or support.
 
 If you see **no API key** in the app, open **this app’s** **Manage app → Settings → Secrets**, save, then **Reboot app**.
 

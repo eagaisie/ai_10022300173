@@ -26,6 +26,19 @@ def _groq_llm_failure_hint(assistant_text: str) -> str:
         )
     if "429" in assistant_text or "rate limit" in low or "quota" in low or "too many requests" in low:
         return "**Rate limit / quota:** wait briefly, try again, or check usage in the Groq console."
+    if "403" in assistant_text and "1010" in assistant_text:
+        return (
+            "**Cloudflare 1010** often means the request was blocked before it reached Groq (common with "
+            "default Python clients). The app now sends a normal **User-Agent**; redeploy, retry. If it "
+            "persists on **Streamlit Cloud**, try running **locally**, set **`LLM_HTTP_USER_AGENT`** in "
+            "Secrets to a current browser UA string, or ask Groq support whether your Cloud egress IP is allowed."
+        )
+    if "403" in assistant_text:
+        return (
+            "**HTTP 403:** key scope, account restriction, or edge block. Confirm the key at "
+            "[console.groq.com](https://console.groq.com/), check **Manage app → Logs**, try from your laptop "
+            "with the same Secrets to see if only Cloud is affected."
+        )
     if "model" in low and ("not found" in low or "does not exist" in low or "invalid_model" in low):
         return (
             "**Unknown or retired model id:** set `LLM_MODEL` to a name from "
@@ -141,6 +154,7 @@ def _apply_streamlit_secrets_direct_keys() -> None:
         "GROQ_API_KEY",
         "LLM_MODEL",
         "LLM_API_URL",
+        "LLM_HTTP_USER_AGENT",
         "HF_TOKEN",
     ):
         try:

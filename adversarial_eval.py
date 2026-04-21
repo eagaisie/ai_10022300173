@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib import error, request
 
-from pipeline import resolve_llm_runtime_config, run_rag_query
+from pipeline import build_llm_chat_headers, resolve_llm_runtime_config, run_rag_query
 
 ROOT = Path(__file__).resolve().parent
 LOG_DIR = ROOT / "logs"
@@ -46,10 +46,7 @@ def call_pure_llm(question: str) -> str:
     req = request.Request(
         api_url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
+        headers=build_llm_chat_headers(api_key),
         method="POST",
     )
 

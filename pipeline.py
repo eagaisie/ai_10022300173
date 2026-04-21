@@ -86,6 +86,28 @@ def _normalize_env_string(value: str) -> str:
 GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
+def build_llm_chat_headers(api_key: str) -> dict[str, str]:
+    """
+    Headers for Groq chat POSTs. Groq sits behind Cloudflare; the default
+    ``Python-urllib/…`` user-agent is often blocked (HTTP 403, error **1010**).
+    Override with env ``LLM_HTTP_USER_AGENT`` if needed.
+    """
+    ua = _normalize_env_string(
+        os.getenv(
+            "LLM_HTTP_USER_AGENT",
+            "Mozilla/5.0 (compatible; RAG-Assignment/1.0; +https://streamlit.io)",
+        )
+    )
+    if not ua:
+        ua = "Mozilla/5.0 (compatible; RAG-Assignment/1.0)"
+    return {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "application/json",
+        "User-Agent": ua,
+    }
+
+
 def _first_llm_api_key_from_env() -> tuple[str, str]:
     """Return (api_key, env_var_name) from the first non-empty key candidate."""
     for name in ("LLM_API_KEY", "GROQ_API_KEY"):
@@ -137,10 +159,7 @@ def call_llm_api(prompt: str, log_path: Path) -> str:
     req = request.Request(
         api_url,
         data=data,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
+        headers=build_llm_chat_headers(api_key),
         method="POST",
     )
 
