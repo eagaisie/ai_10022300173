@@ -10,6 +10,33 @@ import streamlit as st
 
 from pipeline import run_numpy_expanded_rag_query
 
+
+def _groq_llm_failure_hint(assistant_text: str) -> str:
+    """Tailored follow-up; the assistant bubble already has the raw ``API call failed: …`` line."""
+    low = assistant_text.lower()
+    if "missing llm_api_key" in low or "missing groq_api_key" in low:
+        return (
+            "**Secrets missing on this app:** **Manage app** → **Settings** → **Secrets** — add "
+            '`GROQ_API_KEY = "gsk_..."` and `LLM_MODEL = "…"` (a valid Groq model id), **Save**, then **Reboot app**.'
+        )
+    if "401" in assistant_text or "invalid_api_key" in low or "incorrect api key" in low:
+        return (
+            "**Groq rejected the API key** (wrong or revoked). Create a new key at "
+            "[console.groq.com](https://console.groq.com/), paste it into **Secrets**, **Reboot app**."
+        )
+    if "429" in assistant_text or "rate limit" in low or "quota" in low or "too many requests" in low:
+        return "**Rate limit / quota:** wait briefly, try again, or check usage in the Groq console."
+    if "model" in low and ("not found" in low or "does not exist" in low or "invalid_model" in low):
+        return (
+            "**Unknown or retired model id:** set `LLM_MODEL` to a name from "
+            "[Groq’s model list](https://console.groq.com/docs/models), **Save**, **Reboot app**."
+        )
+    return (
+        "**LLM step failed** — read the **assistant** line above (starts with `API call failed:`). "
+        "For server-side detail: **Manage app** → **Logs**."
+    )
+
+
 st.set_page_config(
     page_title="RAG Research Desk",
     page_icon="✨",
@@ -329,11 +356,7 @@ if user_query:
             else:
                 st.markdown(result["final_response"])
                 if not result.get("api_call_success", True):
-                    st.warning(
-                        "The **LLM** step failed (see the assistant text above). On Streamlit Cloud, "
-                        "open **Manage app** → **Settings** → **Secrets**, add e.g. "
-                        '`GROQ_API_KEY = "gsk_..."` and `LLM_MODEL = "llama-3.3-70b-versatile"`, save, then **Reboot app**.'
-                    )
+                    st.warning(_groq_llm_failure_hint(result.get("final_response", "")))
 
     st.session_state.chat_history.append(
         {"role": "assistant", "content": result["final_response"]}
