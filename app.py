@@ -4,12 +4,14 @@ import json
 
 import streamlit as st
 
-from pipeline import run_rag_query
+from pipeline import run_numpy_expanded_rag_query
 
 
 st.set_page_config(page_title="Custom RAG Demo", layout="wide")
 st.title("Custom Retrieval + Prompting Pipeline")
-st.caption("Manual FAISS retrieval with strict context-grounded prompting.")
+st.caption(
+    "NumPy cosine retrieval on expanded queries, strict context-grounded prompting, optional memory."
+)
 
 if "memory_buffer" not in st.session_state:
     st.session_state.memory_buffer = []
@@ -38,7 +40,7 @@ if user_query:
 
     with st.chat_message("assistant"):
         with st.spinner("Running retrieval + generation pipeline..."):
-            result = run_rag_query(
+            result = run_numpy_expanded_rag_query(
                 user_query,
                 top_k=3,
                 memory_buffer=st.session_state.memory_buffer,
@@ -59,19 +61,29 @@ with st.sidebar:
     st.header("Retrieval Details")
     latest = st.session_state.latest_result
     if latest is None:
-        st.info("Run a query to view retrieved chunks, scores, and prompt.")
+        st.info("Submit a prompt to see query expansion, retrieval, scores, and the exact LLM prompt.")
     else:
-        st.subheader("Similarity Scores")
-        st.json(latest["similarity_scores"])
+        st.subheader("Original query")
+        st.write(latest.get("original_query", ""))
 
-        st.subheader("Retrieved Chunks")
-        for i, doc in enumerate(latest["retrieved_documents"], start=1):
+        st.subheader("Expanded query (used for embedding)")
+        st.write(latest.get("expanded_query", latest.get("original_query", "")))
+
+        st.subheader("NumPy cosine similarity scores (top 3)")
+        st.json(latest.get("numpy_similarity_scores", latest.get("similarity_scores", [])))
+
+        st.subheader("Retrieved chunks")
+        docs = latest.get("retrieved_documents") or []
+        for i, doc in enumerate(docs, start=1):
             label = f"Chunk {i} | id={doc['chunk_id']} | score={doc['score']:.4f}"
             with st.expander(label):
                 st.write(doc["text"])
 
-        st.subheader("Final Prompt Sent to LLM")
-        st.code(latest["exact_prompt_used"])
+        st.subheader("Final prompt sent to the LLM")
+        st.code(
+            latest.get("exact_prompt_sent_to_llm", latest.get("exact_prompt_used", "")),
+            language="text",
+        )
 
         st.subheader("Logs")
         st.write(f"Log file: `{latest['log_file']}`")

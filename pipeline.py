@@ -147,7 +147,11 @@ def expand_user_query(user_query: str) -> str:
     return f"{user_query}. Related terms: {', '.join(terms)}."
 
 
-def run_numpy_expanded_rag_query(user_query: str, top_k: int = 3) -> dict[str, Any]:
+def run_numpy_expanded_rag_query(
+    user_query: str,
+    top_k: int = 3,
+    memory_buffer: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
     """
     Pipeline:
       1) expand query
@@ -159,6 +163,7 @@ def run_numpy_expanded_rag_query(user_query: str, top_k: int = 3) -> dict[str, A
     if not user_query.strip():
         raise ValueError("user_query cannot be empty.")
 
+    memory_buffer = memory_buffer or []
     log_path = LOG_DIR / f"numpy_rag_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     _log("Starting NumPy expanded RAG pipeline", log_path)
     _log(f"Original query: {user_query}", log_path)
@@ -199,22 +204,40 @@ def run_numpy_expanded_rag_query(user_query: str, top_k: int = 3) -> dict[str, A
         log_path,
     )
 
-    exact_prompt = build_grounded_prompt(user_query, retrieved_docs, memory_buffer=[])
+    _log(f"Memory turns provided: {len(memory_buffer)}", log_path)
+    exact_prompt = build_grounded_prompt(user_query, retrieved_docs, memory_buffer=memory_buffer)
     _log("Built strict grounded prompt", log_path)
 
+    api_call_ok = True
     try:
         final_response = call_llm_api(exact_prompt, log_path)
         _log("LLM response received", log_path)
     except Exception as e:
+        api_call_ok = False
         final_response = f"API call failed: {e}"
         _log(final_response, log_path)
 
+    numpy_scores = [item["score"] for item in retrieved_docs]
+    chunk_texts = [item["text"] for item in retrieved_docs]
+
     result = {
+        "original_query": user_query,
+        "expanded_query": expanded_query,
         "final_llm_response": final_response,
-        "retrieved_text_chunks": [item["text"] for item in retrieved_docs],
-        "numpy_similarity_scores": [item["score"] for item in retrieved_docs],
+        "final_response": final_response,
+        "retrieved_text_chunks": chunk_texts,
+        "numpy_similarity_scores": numpy_scores,
+        "similarity_scores": numpy_scores,
+        "retrieved_documents": retrieved_docs,
         "exact_prompt_sent_to_llm": exact_prompt,
+        "exact_prompt_used": exact_prompt,
+        "api_call_success": api_call_ok,
+        "memory_used": memory_buffer[-3:],
+        "log_file": str(log_path),
     }
+    result_path = LOG_DIR / f"numpy_rag_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    result_path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    _log(f"Saved structured result to {result_path}", log_path)
     return result
 
 
