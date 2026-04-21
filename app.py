@@ -112,11 +112,8 @@ def _apply_streamlit_secrets_direct_keys() -> None:
     for key in (
         "LLM_API_KEY",
         "GROQ_API_KEY",
-        "OPENAI_API_KEY",
         "LLM_MODEL",
-        "OPENAI_MODEL",
         "LLM_API_URL",
-        "LLM_PROVIDER",
         "HF_TOKEN",
     ):
         try:
@@ -167,19 +164,15 @@ def _apply_local_secrets_toml_file() -> None:
 
 
 def _synthesize_llm_env_from_aliases() -> None:
-    """pipeline.py expects LLM_API_KEY / LLM_MODEL; accept common alternate secret names."""
+    """Ensure LLM_API_KEY is set when only GROQ_API_KEY is provided; optional model aliases."""
     if not os.getenv("LLM_API_KEY", "").strip():
-        for alt in ("GROQ_API_KEY", "OPENAI_API_KEY", "OPENAI_KEY", "AZURE_OPENAI_API_KEY"):
-            v = os.getenv(alt, "").strip()
-            if v:
-                os.environ["LLM_API_KEY"] = v
-                break
+        v = os.getenv("GROQ_API_KEY", "").strip()
+        if v:
+            os.environ["LLM_API_KEY"] = v
     if not os.getenv("LLM_MODEL", "").strip():
-        for alt in ("OPENAI_MODEL", "LLM_MODEL_NAME"):
-            v = os.getenv(alt, "").strip()
-            if v:
-                os.environ["LLM_MODEL"] = v
-                break
+        v = os.getenv("LLM_MODEL_NAME", "").strip()
+        if v:
+            os.environ["LLM_MODEL"] = v
 
 
 def _refresh_llm_env_from_streamlit() -> None:
@@ -227,9 +220,9 @@ with st.sidebar:
         st.error(
             "**No API key in the environment.**\n\n"
             "- **Streamlit Community Cloud:** **Manage app** → **Settings** → **Secrets** — add "
-            "`LLM_API_KEY` (or `GROQ_API_KEY` / `OPENAI_API_KEY`) and `LLM_MODEL`. **Save**, then **Reboot app**.\n"
+            "`LLM_API_KEY` (or `GROQ_API_KEY`) and `LLM_MODEL` (Groq model id). **Save**, then **Reboot app**.\n"
             "- **Local `streamlit run`:** create `.streamlit/secrets.toml` (copy from "
-            "`.streamlit/secrets.toml.example` in the repo), or `export LLM_API_KEY=...` in the same terminal."
+            "`.streamlit/secrets.toml.example` in the repo), or `export GROQ_API_KEY=...` and `export LLM_MODEL=...` in the same terminal."
         )
     _model = os.getenv("LLM_MODEL", "").strip() or "(not set — add LLM_MODEL in Secrets)"
     st.markdown(
@@ -312,9 +305,9 @@ if user_query:
                 hint = (
                     "**Something broke before the answer was ready.**\n\n"
                     "Typical fixes:\n"
-                    "- **Streamlit Cloud:** **Manage app** → **Settings** → **Secrets** — set `LLM_API_KEY` "
-                    "and `LLM_MODEL`, save, then **Reboot app**.\n"
-                    "- **Local:** run `export LLM_API_KEY=...` and `export LLM_MODEL=...` in the same shell "
+                    "- **Streamlit Cloud:** **Manage app** → **Settings** → **Secrets** — set `GROQ_API_KEY` "
+                    "(or `LLM_API_KEY`) and `LLM_MODEL` (Groq model id), save, then **Reboot app**.\n"
+                    "- **Local:** run `export GROQ_API_KEY=...` and `export LLM_MODEL=...` in the same shell "
                     "as `streamlit run app.py`.\n"
                     "- If the error mentions **chunks** or **all_chunks.json**, wait for the first-load "
                     "spinner to finish, or run `python 1_data_prep.py` locally.\n"
@@ -339,7 +332,7 @@ if user_query:
                     st.warning(
                         "The **LLM** step failed (see the assistant text above). On Streamlit Cloud, "
                         "open **Manage app** → **Settings** → **Secrets**, add e.g. "
-                        '`LLM_API_KEY = "sk-..."` and `LLM_MODEL = "gpt-4o-mini"`, save, then **Reboot app**.'
+                        '`GROQ_API_KEY = "gsk_..."` and `LLM_MODEL = "llama-3.3-70b-versatile"`, save, then **Reboot app**.'
                     )
 
     st.session_state.chat_history.append(

@@ -19,7 +19,7 @@ That pipeline:
 2. **Embeds** the expanded query with **sentence-transformers** (same model as chunk embedding).
 3. **Retrieves** the **top 3** chunks by **cosine similarity** using **pure NumPy** (`retrieval.numpy_cosine_top_k`) over the document matrix built from `data/all_chunks.json` (produce chunks with `1_data_prep.py` first).
 4. Builds a **strict** prompt: answer **only** from supplied context; otherwise reply exactly with *“I do not have enough information in the provided context.”*
-5. Calls the **LLM** via HTTP (OpenAI-compatible chat completions), with optional **last-3-turn memory** folded into the prompt.
+5. Calls **Groq** over HTTP (OpenAI-compatible chat completions JSON), with optional **last-3-turn memory** folded into the prompt.
 
 The **sidebar** in Streamlit shows: original query, expanded query, NumPy scores, retrieved chunks, and the exact prompt sent to the LLM.
 
@@ -37,13 +37,13 @@ Machine-readable output:
 
 - `logs/ambiguous_query_eval_20260421_042550.json` (relative to project root; regenerate with `python ambiguous_query_eval.py`).
 
-**Environment note (this run):** `LLM_API_KEY` / `LLM_MODEL` were **not** set, so **both** the RAG final answer step and the pure LLM call returned the same failure string. **Retrieval still ran**: expanded queries, chunk IDs, NumPy scores, and log files were produced. To capture full natural-language answers for your report, set:
+**Environment note (this run):** `GROQ_API_KEY` / `LLM_MODEL` were **not** set, so **both** the RAG final answer step and the pure LLM call returned the same failure string. **Retrieval still ran**: expanded queries, chunk IDs, NumPy scores, and log files were produced. To capture full natural-language answers for your report, set:
 
 ```bash
-export LLM_API_KEY="..."
-export LLM_MODEL="gpt-4o-mini"   # or your grader-approved model
+export GROQ_API_KEY="gsk_..."
+export LLM_MODEL="llama-3.3-70b-versatile"   # or another Groq model id
 # optional:
-export LLM_API_URL="https://api.openai.com/v1/chat/completions"
+# export LLM_API_URL="https://api.groq.com/openai/v1/chat/completions"
 python ambiguous_query_eval.py
 ```
 
@@ -96,7 +96,7 @@ The pure LLM baseline **does not** use these scores or chunks; they illustrate w
 
 | Query ID | RAG generator output | Pure LLM output |
 |------------|---------------------|-----------------|
-| All five | `API call failed: Missing LLM_API_KEY environment variable.` | `Pure LLM call failed: Missing LLM_API_KEY environment variable.` |
+| All five | `API call failed: Missing LLM_API_KEY or GROQ_API_KEY environment variable.` | `Pure LLM call failed: Missing LLM_API_KEY or GROQ_API_KEY environment variable.` |
 
 So for **this** execution, the **comparison of final natural-language answers** is **pending** API credentials. The **retrieval contrast** (scores + chunk focus) is still valid: the RAG stack **always** conditions generation on explicit context once the LLM step runs; the baseline **never** sees those chunks.
 
@@ -106,7 +106,7 @@ So for **this** execution, the **comparison of final natural-language answers** 
 
 1. Ensure `data/all_chunks.json` exists (`python 1_data_prep.py`).
 2. Activate the project venv, e.g. `source env/bin/activate`.
-3. Set `LLM_API_KEY` and `LLM_MODEL`.
+3. Set `GROQ_API_KEY` (or `LLM_API_KEY` with your `gsk_` key) and `LLM_MODEL` (Groq model id).
 4. Run: `streamlit run app.py`
 5. Paste each query from section 3; compare sidebar (original vs expanded, scores, chunks, prompt) with assistant reply.
 
@@ -135,19 +135,13 @@ So for **this** execution, the **comparison of final natural-language answers** 
 
 ## 8. Quick start (environment)
 
+The generator uses **Groq** only ([console.groq.com](https://console.groq.com/)); keys usually start with `gsk_`. Pick a model id from [Groq docs](https://console.groq.com/docs/models).
+
 ```bash
 python3 -m venv env
 source env/bin/activate   # Windows: env\Scripts\activate
 pip install -r requirements.txt
 python 1_data_prep.py      # optional locally: builds data/all_chunks.json (gitignored)
-export LLM_API_KEY="..."
-export LLM_MODEL="gpt-4o-mini"
-streamlit run app.py
-```
-
-**Groq** ([console.groq.com](https://console.groq.com/)) uses the same JSON shape; keys usually start with `gsk_`. Pick a model id from [Groq docs](https://console.groq.com/docs/models).
-
-```bash
 export GROQ_API_KEY="gsk_..."
 export LLM_MODEL="llama-3.3-70b-versatile"
 streamlit run app.py
@@ -170,23 +164,14 @@ On first run, `app.py` can also build `data/all_chunks.json` automatically if it
 5. **Secrets (required for answers, not for retrieval alone):** in the app → **Settings → Secrets**, add a TOML block, for example:
 
 ```toml
-LLM_API_KEY = "sk-...your-key..."
-LLM_MODEL = "gpt-4o-mini"
+GROQ_API_KEY = "gsk_...your-key..."
+LLM_MODEL = "llama-3.3-70b-versatile"
 # optional:
-# LLM_API_URL = "https://api.openai.com/v1/chat/completions"
+# LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 # HF_TOKEN = "hf_..."   # higher Hugging Face rate limits for embedding model download
 ```
 
-`app.py` copies these into `os.environ` on startup so `pipeline.py` sees them. If you already use **`OPENAI_API_KEY`** in Secrets, that is also accepted and mapped to `LLM_API_KEY` (you still need **`LLM_MODEL`** unless you add e.g. `OPENAI_MODEL`).
-
-**Groq on Streamlit Cloud:** put the key in **`GROQ_API_KEY`** (or **`LLM_API_KEY`** if you prefer) and set **`LLM_MODEL`** to a Groq model. If you omit **`LLM_API_URL`**, the app uses Groq’s chat URL when the key starts with **`gsk_`**, when **`GROQ_API_KEY`** is set, or when **`LLM_PROVIDER = "groq"`**.
-
-```toml
-GROQ_API_KEY = "gsk_..."
-LLM_MODEL = "llama-3.3-70b-versatile"
-# LLM_PROVIDER = "groq"
-# LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-```
+`app.py` copies these into `os.environ` on startup so `pipeline.py` sees them. You may use **`LLM_API_KEY`** instead of **`GROQ_API_KEY`** if you prefer that name (same `gsk_` value).
 
 If you see **no API key** in the app, open **this app’s** **Manage app → Settings → Secrets**, save, then **Reboot app**.
 
