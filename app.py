@@ -111,10 +111,12 @@ def _apply_streamlit_secrets_direct_keys() -> None:
         return
     for key in (
         "LLM_API_KEY",
+        "GROQ_API_KEY",
         "OPENAI_API_KEY",
         "LLM_MODEL",
         "OPENAI_MODEL",
         "LLM_API_URL",
+        "LLM_PROVIDER",
         "HF_TOKEN",
     ):
         try:
@@ -167,7 +169,7 @@ def _apply_local_secrets_toml_file() -> None:
 def _synthesize_llm_env_from_aliases() -> None:
     """pipeline.py expects LLM_API_KEY / LLM_MODEL; accept common alternate secret names."""
     if not os.getenv("LLM_API_KEY", "").strip():
-        for alt in ("OPENAI_API_KEY", "OPENAI_KEY", "AZURE_OPENAI_API_KEY"):
+        for alt in ("OPENAI_API_KEY", "OPENAI_KEY", "AZURE_OPENAI_API_KEY", "GROQ_API_KEY"):
             v = os.getenv(alt, "").strip()
             if v:
                 os.environ["LLM_API_KEY"] = v
@@ -219,13 +221,13 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     _refresh_llm_env_from_streamlit()
-    if os.getenv("LLM_API_KEY", "").strip():
+    if os.getenv("LLM_API_KEY", "").strip() or os.getenv("GROQ_API_KEY", "").strip():
         st.success("API key is loaded (hidden). Ready to generate.")
     else:
         st.error(
             "**No API key in the environment.**\n\n"
             "- **Streamlit Community Cloud:** **Manage app** → **Settings** → **Secrets** — add "
-            "`LLM_API_KEY` (or `OPENAI_API_KEY`) and `LLM_MODEL`. **Save**, then **Reboot app**.\n"
+            "`LLM_API_KEY` (or `GROQ_API_KEY` / `OPENAI_API_KEY`) and `LLM_MODEL`. **Save**, then **Reboot app**.\n"
             "- **Local `streamlit run`:** create `.streamlit/secrets.toml` (copy from "
             "`.streamlit/secrets.toml.example` in the repo), or `export LLM_API_KEY=...` in the same terminal."
         )

@@ -83,23 +83,47 @@ def _normalize_env_string(value: str) -> str:
     return s
 
 
-def call_llm_api(prompt: str, log_path: Path) -> str:
+OPENAI_CHAT_COMPLETIONS_URL = "https://api.openai.com/v1/chat/completions"
+GROQ_CHAT_COMPLETIONS_URL = "https://api.groq.com/openai/v1/chat/completions"
+
+
+def resolve_llm_runtime_config() -> tuple[str, str, str]:
     """
-    Calls a chat-completions-compatible endpoint.
-    Required env vars:
-      - LLM_API_KEY
-      - LLM_MODEL
-    Optional env vars:
-      - LLM_API_URL (default: OpenAI chat completions endpoint)
+    Resolve (api_key, model, chat_completions_url) for OpenAI-compatible POSTs.
+
+    Key: LLM_API_KEY, or GROQ_API_KEY (Groq keys usually start with gsk_).
+    URL: LLM_API_URL if set; else Groq default if LLM_PROVIDER=groq, or key looks like Groq, else OpenAI.
     """
     api_key = _normalize_env_string(os.getenv("LLM_API_KEY", ""))
+    if not api_key:
+        api_key = _normalize_env_string(os.getenv("GROQ_API_KEY", ""))
     model = _normalize_env_string(os.getenv("LLM_MODEL", ""))
-    api_url = _normalize_env_string(
-        os.getenv("LLM_API_URL", "https://api.openai.com/v1/chat/completions")
-    )
+    api_url_override = _normalize_env_string(os.getenv("LLM_API_URL", ""))
+    if api_url_override:
+        api_url = api_url_override
+    else:
+        provider = _normalize_env_string(os.getenv("LLM_PROVIDER", "")).lower()
+        if provider == "groq" or api_key.startswith("gsk_"):
+            api_url = GROQ_CHAT_COMPLETIONS_URL
+        else:
+            api_url = OPENAI_CHAT_COMPLETIONS_URL
+    return api_key, model, api_url
+
+
+def call_llm_api(prompt: str, log_path: Path) -> str:
+    """
+    Calls a chat-completions-compatible endpoint (OpenAI or Groq).
+    Required env vars:
+      - LLM_API_KEY or GROQ_API_KEY
+      - LLM_MODEL
+    Optional env vars:
+      - LLM_API_URL (overrides default host)
+      - LLM_PROVIDER=groq (use Groq default URL if LLM_API_URL unset)
+    """
+    api_key, model, api_url = resolve_llm_runtime_config()
 
     if not api_key:
-        raise ValueError("Missing LLM_API_KEY environment variable.")
+        raise ValueError("Missing LLM_API_KEY or GROQ_API_KEY environment variable.")
     if not model:
         raise ValueError("Missing LLM_MODEL environment variable.")
 

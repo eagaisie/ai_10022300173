@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib import error, request
 
-from pipeline import run_rag_query
+from pipeline import resolve_llm_runtime_config, run_rag_query
 
 ROOT = Path(__file__).resolve().parent
 LOG_DIR = ROOT / "logs"
@@ -23,17 +23,12 @@ ADVERSARIAL_QUERIES = [
 def call_pure_llm(question: str) -> str:
     """
     Baseline LLM call without retrieval context.
-    Uses same env vars as pipeline:
-      - LLM_API_KEY
-      - LLM_MODEL
-      - optional LLM_API_URL
+    Uses same env vars as pipeline (including Groq via GROQ_API_KEY / resolve_llm_runtime_config).
     """
-    api_key = os.getenv("LLM_API_KEY", "").strip()
-    model = os.getenv("LLM_MODEL", "").strip()
-    api_url = os.getenv("LLM_API_URL", "https://api.openai.com/v1/chat/completions").strip()
+    api_key, model, api_url = resolve_llm_runtime_config()
 
     if not api_key:
-        raise ValueError("Missing LLM_API_KEY environment variable.")
+        raise ValueError("Missing LLM_API_KEY or GROQ_API_KEY environment variable.")
     if not model:
         raise ValueError("Missing LLM_MODEL environment variable.")
 

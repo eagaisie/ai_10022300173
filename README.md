@@ -145,6 +145,16 @@ export LLM_MODEL="gpt-4o-mini"
 streamlit run app.py
 ```
 
+**Groq instead of OpenAI** (same chat JSON; get a key at [console.groq.com](https://console.groq.com/)):
+
+```bash
+export GROQ_API_KEY="gsk_..."
+export LLM_MODEL="llama-3.3-70b-versatile"
+# optional explicit URL (otherwise chosen automatically for gsk_ keys):
+# export LLM_API_URL="https://api.groq.com/openai/v1/chat/completions"
+streamlit run app.py
+```
+
 **Local API keys without `export`:** copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml`, edit the values (that file is **gitignored**), then run `streamlit run app.py`.
 
 On first run, `app.py` can also build `data/all_chunks.json` automatically if it is missing (needed for **Streamlit Community Cloud**, where that file is not in Git).
@@ -170,6 +180,15 @@ LLM_MODEL = "gpt-4o-mini"
 ```
 
 `app.py` copies these into `os.environ` on startup so `pipeline.py` sees them. If you already use **`OPENAI_API_KEY`** in Secrets, that is also accepted and mapped to `LLM_API_KEY` (you still need **`LLM_MODEL`** unless you add e.g. `OPENAI_MODEL`).
+
+**Groq on Streamlit Cloud:** use a **Groq model id** for `LLM_MODEL` (see [Groq models](https://console.groq.com/docs/models)) and either put the key in **`GROQ_API_KEY`** or **`LLM_API_KEY`**. If you omit `LLM_API_URL`, the app defaults to Groq’s OpenAI-compatible URL when the key starts with **`gsk_`** or when **`LLM_PROVIDER = "groq"`**.
+
+```toml
+GROQ_API_KEY = "gsk_..."
+LLM_MODEL = "llama-3.3-70b-versatile"
+# LLM_PROVIDER = "groq"
+# LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+```
 
 If you see **Missing LLM_API_KEY**, the deployed app has no matching secret: open **this app’s** **Manage app → Settings → Secrets** (not only account-level settings), save, then **Reboot app**.
 
