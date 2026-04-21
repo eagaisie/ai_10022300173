@@ -22,6 +22,9 @@ data/all_chunks.json
 data/csv_chunks.json
 data/pdf_chunks.json
 
+# Streamlit local secrets (never commit API keys)
+.streamlit/secrets.toml
+
 # OS / editor noise
 .DS_Store
 Thumbs.db

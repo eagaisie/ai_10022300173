@@ -145,6 +145,8 @@ export LLM_MODEL="gpt-4o-mini"
 streamlit run app.py
 ```
 
+**Local API keys without `export`:** copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml`, edit the values (that file is **gitignored**), then run `streamlit run app.py`.
+
 On first run, `app.py` can also build `data/all_chunks.json` automatically if it is missing (needed for **Streamlit Community Cloud**, where that file is not in Git).
 
 ---

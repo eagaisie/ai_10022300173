@@ -47,6 +47,32 @@ def _apply_streamlit_secrets_to_environ() -> None:
         pass
 
 
+def _apply_local_secrets_toml_file() -> None:
+    """
+    Fallback when st.secrets is empty or unavailable: read `.streamlit/secrets.toml`
+    (same format as Streamlit; gitignored — safe for local dev).
+    Only sets keys that are not already present (Cloud / shell exports win).
+    """
+    path = Path(__file__).resolve().parent / ".streamlit" / "secrets.toml"
+    if not path.is_file():
+        return
+    try:
+        import tomllib
+    except ImportError:
+        return
+    try:
+        with path.open("rb") as f:
+            data = tomllib.load(f)
+    except Exception:
+        return
+    if not isinstance(data, dict):
+        return
+    flat: dict[str, str] = {}
+    _flatten_streamlit_secrets(data, flat)
+    for key, val in flat.items():
+        os.environ.setdefault(key, val)
+
+
 def _synthesize_llm_env_from_aliases() -> None:
     """pipeline.py expects LLM_API_KEY / LLM_MODEL; accept common alternate secret names."""
     if not os.getenv("LLM_API_KEY", "").strip():
@@ -66,6 +92,7 @@ def _synthesize_llm_env_from_aliases() -> None:
 def _refresh_llm_env_from_streamlit() -> None:
     """Re-read secrets into os.environ (safe to call every rerun / before each chat)."""
     _apply_streamlit_secrets_to_environ()
+    _apply_local_secrets_toml_file()
     _synthesize_llm_env_from_aliases()
 
 
@@ -101,8 +128,11 @@ with st.sidebar:
         st.success("LLM_API_KEY is loaded (value hidden).")
     else:
         st.error(
-            "**No API key in the environment.** Add it in Streamlit **Manage app → Settings → Secrets** "
-            "as `LLM_API_KEY`, or `OPENAI_API_KEY`. Save, then **Reboot app**."
+            "**No API key in the environment.**\n\n"
+            "- **Streamlit Community Cloud:** **Manage app** → **Settings** → **Secrets** — add "
+            "`LLM_API_KEY` (or `OPENAI_API_KEY`) and `LLM_MODEL`. **Save**, then **Reboot app**.\n"
+            "- **Local `streamlit run`:** create `.streamlit/secrets.toml` (copy from "
+            "`.streamlit/secrets.toml.example` in the repo), or `export LLM_API_KEY=...` in the same terminal."
         )
     _model = os.getenv("LLM_MODEL", "").strip() or "(not set — add LLM_MODEL in Secrets)"
     st.caption(f"LLM_MODEL: `{_model}`")
