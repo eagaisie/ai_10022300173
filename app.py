@@ -119,9 +119,8 @@ if user_query:
                 if not result.get("api_call_success", True):
                     st.warning(
                         "The **LLM** step failed (see the assistant text above). On Streamlit Cloud, "
-                        "open **Manage app** → **Settings** → **Secrets**, set `LLM_API_KEY` and "
-                        "`LLM_MODEL` exactly (no quotes in the TOML value unless they are part of the key), "
-                        "save, then **Reboot app**."
+                        "open **Manage app** → **Settings** → **Secrets**, add e.g. "
+                        '`LLM_API_KEY = "sk-..."` and `LLM_MODEL = "gpt-4o-mini"`, save, then **Reboot app**.'
                     )
 
     st.session_state.chat_history.append(
