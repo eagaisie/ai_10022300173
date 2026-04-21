@@ -145,6 +145,14 @@ export LLM_MODEL="gpt-4o-mini"
 streamlit run app.py
 ```
 
+**Groq** ([console.groq.com](https://console.groq.com/)) uses the same JSON shape; keys usually start with `gsk_`. Pick a model id from [Groq docs](https://console.groq.com/docs/models).
+
+```bash
+export GROQ_API_KEY="gsk_..."
+export LLM_MODEL="llama-3.3-70b-versatile"
+streamlit run app.py
+```
+
 **Local API keys without `export`:** copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml`, edit the values (that file is **gitignored**), then run `streamlit run app.py`.
 
 On first run, `app.py` can also build `data/all_chunks.json` automatically if it is missing (needed for **Streamlit Community Cloud**, where that file is not in Git).
@@ -171,7 +179,16 @@ LLM_MODEL = "gpt-4o-mini"
 
 `app.py` copies these into `os.environ` on startup so `pipeline.py` sees them. If you already use **`OPENAI_API_KEY`** in Secrets, that is also accepted and mapped to `LLM_API_KEY` (you still need **`LLM_MODEL`** unless you add e.g. `OPENAI_MODEL`).
 
-If you see **Missing LLM_API_KEY**, the deployed app has no matching secret: open **this app’s** **Manage app → Settings → Secrets** (not only account-level settings), save, then **Reboot app**.
+**Groq on Streamlit Cloud:** put the key in **`GROQ_API_KEY`** (or **`LLM_API_KEY`** if you prefer) and set **`LLM_MODEL`** to a Groq model. If you omit **`LLM_API_URL`**, the app uses Groq’s chat URL when the key starts with **`gsk_`**, when **`GROQ_API_KEY`** is set, or when **`LLM_PROVIDER = "groq"`**.
+
+```toml
+GROQ_API_KEY = "gsk_..."
+LLM_MODEL = "llama-3.3-70b-versatile"
+# LLM_PROVIDER = "groq"
+# LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+```
+
+If you see **no API key** in the app, open **this app’s** **Manage app → Settings → Secrets**, save, then **Reboot app**.
 
 6. **First deploy / cold start:** the app builds **`data/all_chunks.json`** from the **tracked** CSV and PDF under `data/` (this can take **1–2 minutes** and may download **sentence-transformers** weights into `.hf_cache` on the instance). Later loads are faster.
 
