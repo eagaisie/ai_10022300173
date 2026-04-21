@@ -36,6 +36,29 @@ def _flatten_streamlit_secrets(node: Any, out: dict[str, str]) -> None:
                 out[key] = s
 
 
+def _apply_streamlit_secrets_direct_keys() -> None:
+    """Backup path when `dict(st.secrets)` fails or omits keys; uses Streamlit's mapping API."""
+    try:
+        sec = st.secrets
+    except Exception:
+        return
+    for key in (
+        "LLM_API_KEY",
+        "OPENAI_API_KEY",
+        "LLM_MODEL",
+        "OPENAI_MODEL",
+        "LLM_API_URL",
+        "HF_TOKEN",
+    ):
+        try:
+            raw = sec[key]
+        except (KeyError, TypeError):
+            continue
+        s = _coerce_secret_scalar(raw)
+        if s:
+            os.environ[key] = s
+
+
 def _apply_streamlit_secrets_to_environ() -> None:
     """Map Streamlit Cloud (TOML) secrets into os.environ for pipeline.py / HF."""
     try:
@@ -45,6 +68,7 @@ def _apply_streamlit_secrets_to_environ() -> None:
             os.environ[key] = val
     except Exception:
         pass
+    _apply_streamlit_secrets_direct_keys()
 
 
 def _apply_local_secrets_toml_file() -> None:
@@ -70,7 +94,7 @@ def _apply_local_secrets_toml_file() -> None:
     flat: dict[str, str] = {}
     _flatten_streamlit_secrets(data, flat)
     for key, val in flat.items():
-        os.environ.setdefault(key, val)
+        os.environ[key] = val
 
 
 def _synthesize_llm_env_from_aliases() -> None:
