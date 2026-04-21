@@ -10,7 +10,74 @@ import streamlit as st
 
 from pipeline import run_numpy_expanded_rag_query
 
-st.set_page_config(page_title="Custom RAG Demo", layout="wide")
+st.set_page_config(
+    page_title="RAG Research Desk",
+    page_icon="✨",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
+def _inject_app_styles() -> None:
+    st.markdown(
+        """
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+  html, body, [data-testid="stAppViewContainer"] {
+    font-family: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif !important;
+  }
+  [data-testid="stAppViewContainer"] > .main {
+    background: radial-gradient(1200px 600px at 10% -10%, rgba(124, 58, 237, 0.12), transparent),
+                radial-gradient(900px 500px at 100% 0%, rgba(236, 72, 153, 0.1), transparent),
+                linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  }
+  [data-testid="stSidebar"] {
+    background: linear-gradient(195deg, #faf5ff 0%, #ede9fe 55%, #e0e7ff 100%) !important;
+    border-right: 2px solid rgba(124, 58, 237, 0.25) !important;
+  }
+  [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+    gap: 0.35rem !important;
+  }
+  div[data-testid="stChatInput"] {
+    border-radius: 18px !important;
+    box-shadow: 0 4px 24px rgba(124, 58, 237, 0.15) !important;
+    border: 2px solid rgba(124, 58, 237, 0.35) !important;
+  }
+  .stButton > button {
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+  }
+  .stButton > button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.25) !important;
+  }
+  .stDownloadButton > button {
+    border-radius: 12px !important;
+    background: linear-gradient(90deg, #7c3aed, #a855f7) !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 600 !important;
+  }
+  [data-testid="stExpander"] details {
+    border-radius: 12px !important;
+    border: 1px solid rgba(124, 58, 237, 0.2) !important;
+    background: rgba(255, 255, 255, 0.75) !important;
+  }
+  [data-testid="stMetric"] {
+    background: rgba(255, 255, 255, 0.85);
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(124, 58, 237, 0.15);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  }
+</style>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+_inject_app_styles()
 
 
 def _coerce_secret_scalar(val: Any) -> str | None:
@@ -146,10 +213,14 @@ def _bootstrap_index() -> bool:
 _bootstrap_index()
 
 with st.sidebar:
-    st.subheader("LLM configuration")
+    st.markdown(
+        '<span style="font-size:0.7rem;font-weight:800;letter-spacing:0.14em;color:#6d28d9;'
+        'text-transform:uppercase;">LLM connection</span>',
+        unsafe_allow_html=True,
+    )
     _refresh_llm_env_from_streamlit()
     if os.getenv("LLM_API_KEY", "").strip():
-        st.success("LLM_API_KEY is loaded (value hidden).")
+        st.success("API key is loaded (hidden). Ready to generate.")
     else:
         st.error(
             "**No API key in the environment.**\n\n"
@@ -159,12 +230,41 @@ with st.sidebar:
             "`.streamlit/secrets.toml.example` in the repo), or `export LLM_API_KEY=...` in the same terminal."
         )
     _model = os.getenv("LLM_MODEL", "").strip() or "(not set — add LLM_MODEL in Secrets)"
-    st.caption(f"LLM_MODEL: `{_model}`")
+    st.markdown(
+        f'<p style="margin:0.35rem 0 0 0;font-size:0.85rem;color:#4c1d95;">Model: '
+        f'<code style="background:rgba(124,58,237,0.12);padding:2px 8px;border-radius:8px;">{_model}</code></p>',
+        unsafe_allow_html=True,
+    )
+    st.divider()
 
-st.title("Custom Retrieval + Prompting Pipeline")
-st.caption(
-    "NumPy cosine retrieval on expanded queries, strict context-grounded prompting, optional memory."
+st.markdown(
+    """
+<div style="
+  background: linear-gradient(115deg, #5b21b6 0%, #7c3aed 38%, #c026d3 72%, #db2777 100%);
+  padding: 1.6rem 1.5rem 1.45rem 1.5rem;
+  border-radius: 22px;
+  margin: 0 0 1rem 0;
+  box-shadow: 0 18px 50px rgba(91, 33, 182, 0.35);
+">
+  <p style="margin:0 0 0.35rem 0;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;
+            color: rgba(255,255,255,0.88);text-transform:uppercase;">Ghana budget · elections RAG</p>
+  <h1 style="margin:0;color:#fff;font-size:clamp(1.55rem, 3vw, 2.15rem);font-weight:800;
+             letter-spacing:-0.03em;line-height:1.15;">RAG Research Desk</h1>
+  <p style="margin:0.65rem 0 0 0;color: rgba(255,255,255,0.92);font-size:1.02rem;line-height:1.45;">
+    Query expansion, NumPy cosine retrieval, and strict context-only answers — with a short memory of your last turns.
+  </p>
+</div>
+""",
+    unsafe_allow_html=True,
 )
+
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.metric("Retrieval", "NumPy · top-3", help="Pure cosine similarity in embedding space")
+with c2:
+    st.metric("Grounding", "Strict", help="Answers must cite provided chunks only")
+with c3:
+    st.metric("Memory", "Last 3 turns", help="Recent Q&A pairs appended to the prompt")
 
 if "memory_buffer" not in st.session_state:
     st.session_state.memory_buffer = []
@@ -173,26 +273,32 @@ if "chat_history" not in st.session_state:
 if "latest_result" not in st.session_state:
     st.session_state.latest_result = None
 
-if st.button("Clear Chat + Memory"):
-    st.session_state.chat_history = []
-    st.session_state.memory_buffer = []
-    st.session_state.latest_result = None
-    st.success("Chat and memory buffer cleared.")
+btn_col, _ = st.columns([1, 2])
+with btn_col:
+    if st.button("Clear chat & memory", type="primary", use_container_width=True):
+        st.session_state.chat_history = []
+        st.session_state.memory_buffer = []
+        st.session_state.latest_result = None
+        st.success("Fresh start — chat and memory cleared.")
+
+st.markdown(
+    '<p style="color:#64748b;font-size:0.9rem;margin:0.5rem 0 0.75rem 0;">💬 <strong>Conversation</strong></p>',
+    unsafe_allow_html=True,
+)
 
 # Render chat transcript
 for message in st.session_state.chat_history:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat input
-user_query = st.chat_input("Ask a question about the election data or budget PDF")
+user_query = st.chat_input("Ask about the 2025 budget, fiscal policy, or election data…")
 if user_query:
     with st.chat_message("user"):
         st.markdown(user_query)
     st.session_state.chat_history.append({"role": "user", "content": user_query})
 
     with st.chat_message("assistant"):
-        with st.spinner("Running retrieval + generation pipeline..."):
+        with st.spinner("Retrieving chunks & calling the language model…"):
             try:
                 _refresh_llm_env_from_streamlit()
                 result = run_numpy_expanded_rag_query(
@@ -243,40 +349,66 @@ if user_query:
     st.session_state.memory_buffer = st.session_state.memory_buffer[-3:]
     st.session_state.latest_result = result
 
-# Sidebar retrieval details for latest turn
 with st.sidebar:
-    st.header("Retrieval Details")
+    st.markdown(
+        '<span style="font-size:0.7rem;font-weight:800;letter-spacing:0.14em;color:#be185d;'
+        'text-transform:uppercase;">Last answer · debug</span>',
+        unsafe_allow_html=True,
+    )
     latest = st.session_state.latest_result
     if latest is None:
-        st.info("Submit a prompt to see query expansion, retrieval, scores, and the exact LLM prompt.")
+        st.info("Send a message to see expansion, similarity scores, retrieved chunks, and the exact LLM prompt.")
     else:
-        st.subheader("Original query")
+        st.markdown(
+            '<p style="color:#6d28d9;font-weight:700;font-size:0.9rem;margin:0.5rem 0 0.25rem;">Original query</p>',
+            unsafe_allow_html=True,
+        )
         st.write(latest.get("original_query", ""))
 
-        st.subheader("Expanded query (used for embedding)")
+        st.markdown(
+            '<p style="color:#6d28d9;font-weight:700;font-size:0.9rem;margin:0.75rem 0 0.25rem;">'
+            "Expanded query <small>(embedding)</small></p>",
+            unsafe_allow_html=True,
+        )
         st.write(latest.get("expanded_query", latest.get("original_query", "")))
 
-        st.subheader("NumPy cosine similarity scores (top 3)")
+        st.markdown(
+            '<p style="color:#6d28d9;font-weight:700;font-size:0.9rem;margin:0.75rem 0 0.25rem;">'
+            "Cosine scores · top 3</p>",
+            unsafe_allow_html=True,
+        )
         st.json(latest.get("numpy_similarity_scores", latest.get("similarity_scores", [])))
 
-        st.subheader("Retrieved chunks")
+        st.markdown(
+            '<p style="color:#6d28d9;font-weight:700;font-size:0.9rem;margin:0.75rem 0 0.25rem;">'
+            "Retrieved chunks</p>",
+            unsafe_allow_html=True,
+        )
         docs = latest.get("retrieved_documents") or []
         for i, doc in enumerate(docs, start=1):
-            label = f"Chunk {i} | id={doc['chunk_id']} | score={doc['score']:.4f}"
+            label = f"📄 Chunk {i} · id {doc['chunk_id']} · {doc['score']:.4f}"
             with st.expander(label):
                 st.write(doc["text"])
 
-        st.subheader("Final prompt sent to the LLM")
+        st.markdown(
+            '<p style="color:#6d28d9;font-weight:700;font-size:0.9rem;margin:0.75rem 0 0.25rem;">'
+            "Prompt sent to the LLM</p>",
+            unsafe_allow_html=True,
+        )
         st.code(
             latest.get("exact_prompt_sent_to_llm", latest.get("exact_prompt_used", "")),
             language="text",
         )
 
-        st.subheader("Logs")
-        st.write(f"Log file: `{latest['log_file']}`")
+        st.markdown(
+            '<p style="color:#6d28d9;font-weight:700;font-size:0.9rem;margin:0.75rem 0 0.25rem;">Logs</p>',
+            unsafe_allow_html=True,
+        )
+        st.caption(f"Log file: `{latest.get('log_file', '')}`")
         st.download_button(
-            label="Download Full Result JSON",
+            label="⬇️ Download result JSON",
             data=json.dumps(latest, indent=2, ensure_ascii=False),
             file_name="rag_result.json",
             mime="application/json",
+            use_container_width=True,
         )
