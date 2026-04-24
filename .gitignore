@@ -25,6 +25,12 @@ data/pdf_chunks.json
 # Streamlit local secrets (never commit API keys)
 .streamlit/secrets.toml
 
+# Reports (Word etc. — keep local only; do not commit coursework write-ups)
+*.docx
+*.doc
+~$*.docx
+~$*.doc
+
 # OS / editor noise
 .DS_Store
 Thumbs.db
