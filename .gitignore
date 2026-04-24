@@ -35,9 +35,6 @@ data/pdf_chunks.json
 ~$*.docx
 ~$*.doc
 
-# Auto-generated project report (local only — not for GitHub)
-PROJECT_REPORT.md
-
 # OS / editor noise
 .DS_Store
 Thumbs.db
