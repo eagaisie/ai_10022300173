@@ -1,4 +1,4 @@
-# EMMANUEL ATO GAISIE
+# Emmanuel Ato Gaisie
 # 10022300173
 # CS4241
 

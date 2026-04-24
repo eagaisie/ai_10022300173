@@ -1,3 +1,7 @@
+# Emmanuel Ato Gaisie
+# 10022300173
+# CS4241
+
 """
 Evaluate ambiguous / misleading queries the same way the Streamlit app does:
   RAG path: pipeline.run_numpy_expanded_rag_query (expand → embed → NumPy top-3 → strict prompt → LLM)

@@ -1,5 +1,6 @@
-# Emmanuel Ato Gaisie 
+# Emmanuel Ato Gaisie
 # 10022300173
+# CS4241
 
 # RAG system documentation: ambiguous queries, Streamlit parity, and RAG vs pure LLM
 

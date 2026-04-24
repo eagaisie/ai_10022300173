@@ -1,3 +1,7 @@
+# Emmanuel Ato Gaisie
+# 10022300173
+# CS4241
+
 from __future__ import annotations
 
 import importlib.util
