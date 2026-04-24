@@ -1,4 +1,6 @@
-# EMMANUEL ATO GAISIE 10022300173
+# EMMANUEL ATO GAISIE 
+#10022300173
+#CS4241 
 """
 Load election CSV and budget PDF from ./data, extract text, and chunk with a
 manual sliding window over whitespace-separated words (treated as tokens).
