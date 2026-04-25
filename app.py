@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,22 @@ from typing import Any
 import streamlit as st
 
 from pipeline import run_numpy_expanded_rag_query
+
+_APP_ROOT = Path(__file__).resolve().parent
+_LOG_DIR = _APP_ROOT / "logs"
+_APP_LOG_PATH = _LOG_DIR / "streamlit_app.log"
+
+
+def _get_app_logger() -> logging.Logger:
+    """Append-only file log under ``logs/streamlit_app.log`` (one FileHandler per process)."""
+    log = logging.getLogger("cs4241.streamlit_rag")
+    log.setLevel(logging.INFO)
+    if not log.handlers:
+        _LOG_DIR.mkdir(parents=True, exist_ok=True)
+        fh = logging.FileHandler(_APP_LOG_PATH, encoding="utf-8")
+        fh.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
+        log.addHandler(fh)
+    return log
 
 
 def _groq_llm_failure_hint(assistant_text: str) -> str:
@@ -319,6 +336,7 @@ with btn_col:
         st.session_state.chat_history = []
         st.session_state.memory_buffer = []
         st.session_state.latest_result = None
+        _get_app_logger().info("Chat and memory cleared by user.")
         st.success("Fresh start — chat and memory cleared.")
 
 st.markdown(
@@ -333,6 +351,8 @@ for message in st.session_state.chat_history:
 
 user_query = st.chat_input("Ask about the 2025 budget, fiscal policy, or election data…")
 if user_query:
+    _app_log = _get_app_logger()
+    _app_log.info("User query submitted (length=%d chars).", len(user_query))
     with st.chat_message("user"):
         st.markdown(user_query)
     st.session_state.chat_history.append({"role": "user", "content": user_query})
@@ -346,7 +366,13 @@ if user_query:
                     top_k=3,
                     memory_buffer=st.session_state.memory_buffer,
                 )
+                _app_log.info(
+                    "Pipeline finished; api_call_success=%s; pipeline_log=%s",
+                    result.get("api_call_success"),
+                    result.get("log_file", ""),
+                )
             except Exception as e:
+                _app_log.exception("Pipeline failed before response: %s", e)
                 hint = (
                     "**Something broke before the answer was ready.**\n\n"
                     "Typical fixes:\n"
@@ -391,6 +417,7 @@ with st.sidebar:
         'text-transform:uppercase;">Last answer · debug</span>',
         unsafe_allow_html=True,
     )
+    st.caption(f"App session log (append): `{_APP_LOG_PATH.relative_to(_APP_ROOT)}`")
     latest = st.session_state.latest_result
     if latest is None:
         st.info("Send a message to see expansion, similarity scores, retrieved chunks, and the exact LLM prompt.")
